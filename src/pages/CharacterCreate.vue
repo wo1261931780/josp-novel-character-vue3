@@ -38,9 +38,13 @@
           <el-form-item label="性别" prop="gender">
             <div class="radio-group-wrapper">
               <el-radio-group v-model="form.gender">
-                <el-radio :value="1">男</el-radio>
-                <el-radio :value="0">女</el-radio>
-                <el-radio :value="2">其他</el-radio>
+                <el-radio
+                  v-for="opt in genderOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </el-radio>
               </el-radio-group>
               <el-button @click="randomGender" class="random-btn small">🎲</el-button>
             </div>
@@ -107,11 +111,12 @@
           <el-form-item label="性格特点" prop="personality">
             <div class="input-with-random">
               <el-select v-model="form.personality" placeholder="选择性格" style="width: 100%">
-                <el-option label="正义" value="正义" />
-                <el-option label="邪道" value="邪道" />
-                <el-option label="中立" value="中立" />
-                <el-option label="自私" value="自私" />
-                <el-option label="善良" value="善良" />
+                <el-option
+                  v-for="opt in personalityOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
               </el-select>
               <el-button @click="randomPersonality" class="random-btn">🎲</el-button>
             </div>
@@ -148,11 +153,13 @@
           <el-form-item label="样貌" prop="appearance">
             <div class="appearance-wrapper">
               <el-radio-group v-model="form.appearance" class="appearance-group">
-                <el-radio value="丑陋">丑陋</el-radio>
-                <el-radio value="平庸">平庸</el-radio>
-                <el-radio value="大众脸">大众脸</el-radio>
-                <el-radio value="美丽">美丽</el-radio>
-                <el-radio value="超凡脱俗">超凡脱俗</el-radio>
+                <el-radio
+                  v-for="opt in appearanceOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </el-radio>
               </el-radio-group>
               <el-button @click="randomAppearance" class="random-btn small">🎲</el-button>
             </div>
@@ -181,6 +188,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useCharacterStore } from '@/stores/character'
 import { getCategories, getTypesByCategory, getBirthplaces, getCompatibleBackgrounds } from '@/api/novelType'
+import { getGenderEnums, getPersonalityEnums, getBackgroundEnums, getAppearanceEnums } from '@/api/enum'
 
 const router = useRouter()
 const characterStore = useCharacterStore()
@@ -192,9 +200,15 @@ const typeList = ref([])
 const birthplaces = ref([])
 const compatibleBackgrounds = ref([])
 
+// 枚举选项（从后端 API 加载）
+const genderOptions = ref([])
+const personalityOptions = ref([])
+const backgroundOptions = ref([])
+const appearanceOptions = ref([])
+
 const form = reactive({
   name: '',
-  gender: 1,
+  gender: '男',
   age: 25,
   personality: '',
   background: '',
@@ -223,10 +237,6 @@ const maleNames = ['尘', '天', '风', '云', '霄', '寒', '墨', '轩', '羽'
 const femaleNames = ['雪', '月', '灵', '瑶', '倩', '雅', '诗', '琳', '欣', '婷', '雅', '琴', '韵', '璇', '雨', '烟', '蝶', '霜', '霞', '云']
 const neutralNames = ['无心', '逍遥', '醉月', '听风', '问柳', '流云', '惊鸿', '落霞', '孤鸿', '照晚', '凌波', '惊雪', '清羽', '寒烟', '碧落']
 
-const backgrounds = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代']
-const personalities = ['正义', '邪道', '中立', '自私', '善良']
-const appearances = ['丑陋', '平庸', '大众脸', '美丽', '超凡脱俗']
-
 function randomChoice(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
@@ -236,9 +246,9 @@ function randomName() {
   const surname = randomChoice(surnames)
   let name
 
-  if (gender === 1) {
+  if (gender === '男') {
     name = surname + randomChoice(maleNames)
-  } else if (gender === 0) {
+  } else if (gender === '女') {
     name = surname + randomChoice(femaleNames)
   } else {
     name = surname + randomChoice(neutralNames)
@@ -247,7 +257,10 @@ function randomName() {
 }
 
 function randomGender() {
-  form.gender = [1, 0, 2][Math.floor(Math.random() * 3)]
+  const opts = genderOptions.value
+  if (opts.length > 0) {
+    form.gender = randomChoice(opts).value
+  }
 }
 
 function randomAge() {
@@ -255,12 +268,18 @@ function randomAge() {
 }
 
 function randomPersonality() {
-  form.personality = randomChoice(personalities)
+  const opts = personalityOptions.value
+  if (opts.length > 0) {
+    form.personality = randomChoice(opts).value
+  }
 }
 
 function randomBackground() {
-  form.background = randomChoice(backgrounds)
-  onBackgroundChange()
+  const opts = compatibleBackgrounds.value.length > 0 ? compatibleBackgrounds.value : backgroundOptions.value.map(b => b.value)
+  if (opts.length > 0) {
+    form.background = randomChoice(opts)
+    onBackgroundChange()
+  }
 }
 
 function randomBirthplace() {
@@ -270,7 +289,10 @@ function randomBirthplace() {
 }
 
 function randomAppearance() {
-  form.appearance = randomChoice(appearances)
+  const opts = appearanceOptions.value
+  if (opts.length > 0) {
+    form.appearance = randomChoice(opts).value
+  }
 }
 
 async function randomType() {
@@ -383,20 +405,50 @@ async function handleSubmit() {
 function resetForm() {
   formRef.value.resetFields()
   form.age = 25
-  form.gender = 1
-  form.appearance = '平庸'
+  form.gender = genderOptions.value[0]?.value ?? 1
+  form.personality = personalityOptions.value[0]?.value ?? ''
+  form.appearance = appearanceOptions.value[0]?.value ?? '平庸'
   form.category = categories.value[0] || ''
   form.novelTypeId = null
   form.background = ''
   form.birthplace = ''
   typeList.value = []
   birthplaces.value = []
-  compatibleBackgrounds.value = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代']
+  compatibleBackgrounds.value = backgroundOptions.value.map(b => b.value)
 }
 
-onMounted(() => {
-  loadCategories()
-  compatibleBackgrounds.value = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代']
+async function loadEnums() {
+  try {
+    const [genderRes, personalityRes, backgroundRes, appearanceRes] = await Promise.all([
+      getGenderEnums(),
+      getPersonalityEnums(),
+      getBackgroundEnums(),
+      getAppearanceEnums()
+    ])
+    genderOptions.value = genderRes || []
+    personalityOptions.value = personalityRes || []
+    backgroundOptions.value = backgroundRes || []
+    appearanceOptions.value = appearanceRes || []
+    // 默认选中第一个
+    if (genderOptions.value.length > 0) {
+      form.gender = genderOptions.value[0].value
+    }
+    if (personalityOptions.value.length > 0) {
+      form.personality = personalityOptions.value[0].value
+    }
+    if (appearanceOptions.value.length > 0) {
+      form.appearance = appearanceOptions.value[0].value
+    }
+    // compatibleBackgrounds 初始为全部背景
+    compatibleBackgrounds.value = backgroundOptions.value.map(b => b.value)
+  } catch (error) {
+    console.error('加载枚举失败', error)
+  }
+}
+
+onMounted(async () => {
+  await loadEnums()
+  await loadCategories()
 })
 </script>
 
