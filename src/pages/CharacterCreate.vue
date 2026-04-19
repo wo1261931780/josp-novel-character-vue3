@@ -18,6 +18,26 @@
     </header>
 
     <!-- ============================================
+         Analysis Context Banner
+         ============================================ -->
+    <div class="context-banner" v-if="analysisContext">
+      <div class="context-banner-inner">
+        <div class="context-info">
+          <span class="label-micro context-label">&#127981; 世界观背景</span>
+          <span class="context-bg">{{ analysisContext.suggestedBackground }}</span>
+          <span class="context-sep" aria-hidden="true">·</span>
+          <span class="context-genres" v-if="analysisContext.genres?.length">
+            {{ analysisContext.genres.join(' / ') }}
+          </span>
+        </div>
+        <el-button text size="small" @click="clearContext" class="context-clear">
+          <span aria-hidden="true">&#10005;</span>
+          清除背景
+        </el-button>
+      </div>
+    </div>
+
+    <!-- ============================================
          Form Body — White editorial
          ============================================ -->
     <main class="create-main">
@@ -180,6 +200,36 @@
               </div>
             </div>
 
+            <!-- Analysis context hints -->
+            <div class="form-row form-row--full context-hints" v-if="analysisContext">
+              <div class="hint-group" v-if="analysisContext.nameStyleSuggestion">
+                <p class="label-micro hint-label">&#127872; 姓名风格</p>
+                <p class="hint-text">{{ analysisContext.nameStyleSuggestion }}</p>
+              </div>
+              <div class="hint-group" v-if="analysisContext.suggestedSetting">
+                <p class="label-micro hint-label">&#127968; 世界设定</p>
+                <p class="hint-text">{{ analysisContext.suggestedSetting }}</p>
+              </div>
+              <div class="hint-group" v-if="analysisContext.themes?.length">
+                <p class="label-micro hint-label">&#128161; 核心主题</p>
+                <div class="tag-list">
+                  <span class="hint-tag" v-for="t in analysisContext.themes" :key="t">{{ t }}</span>
+                </div>
+              </div>
+              <div class="hint-group" v-if="analysisContext.skills?.length">
+                <p class="label-micro hint-label">&#9876; 相关技能</p>
+                <div class="tag-list">
+                  <span class="hint-tag hint-tag--accent" v-for="s in analysisContext.skills" :key="s">{{ s }}</span>
+                </div>
+              </div>
+              <div class="hint-group" v-if="analysisContext.typicalConflicts?.length">
+                <p class="label-micro hint-label">&#9878; 典型冲突</p>
+                <div class="tag-list">
+                  <span class="hint-tag hint-tag--muted" v-for="c in analysisContext.typicalConflicts" :key="c">{{ c }}</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -203,13 +253,14 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useCharacterStore } from '@/stores/character'
 import { getCategories, getTypesByCategory, getBirthplaces, getCompatibleBackgrounds } from '@/api/novelType'
 import { getGenderEnums, getPersonalityEnums, getBackgroundEnums, getAppearanceEnums } from '@/api/enum'
 
 const router = useRouter()
+const route = useRoute()
 const characterStore = useCharacterStore()
 
 const submitting = ref(false)
@@ -217,6 +268,7 @@ const categories = ref([])
 const typeList = ref([])
 const birthplaces = ref([])
 const compatibleBackgrounds = ref([])
+const analysisContext = ref(null)
 
 const genderOptions = ref([])
 const personalityOptions = ref([])
@@ -379,9 +431,35 @@ async function loadEnums() {
 }
 
 onMounted(async () => {
+  // 解析分析上下文（从"小说文本分析"页传入）
+  const ctx = route.query.context
+  if (ctx) {
+    try {
+      analysisContext.value = JSON.parse(decodeURIComponent(atob(ctx)))
+      // 自动预选背景环境
+      if (analysisContext.value.suggestedBackground) {
+        const bg = analysisContext.value.suggestedBackground
+        // 尝试匹配已知背景关键词
+        const knownBackgrounds = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代', '星际科幻', '都市']
+        const matched = knownBackgrounds.find(b => bg.includes(b))
+        if (matched) {
+          form.background = matched
+          await onBackgroundChange()
+        }
+      }
+    } catch (e) {
+      console.error('解析分析上下文失败', e)
+    }
+  }
+
   await loadEnums()
   await loadCategories()
 })
+
+function clearContext() {
+  analysisContext.value = null
+  router.replace({ query: {} })
+}
 </script>
 
 <style scoped>
@@ -438,6 +516,63 @@ onMounted(async () => {
 .header-sub { color: var(--f-color-black-50); }
 
 .header-spacer { width: 60px; }
+
+/* ============================================
+   Context Banner
+   ============================================ */
+.context-banner {
+  background: var(--f-color-black);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.context-banner-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--sp-14) var(--sp-24);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+.context-info {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-10);
+  flex-wrap: wrap;
+}
+
+.context-label {
+  color: var(--f-color-accent-100);
+  flex-shrink: 0;
+}
+
+.context-bg {
+  font-size: 13px;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+.context-sep {
+  color: rgba(255,255,255,0.2);
+}
+
+.context-genres {
+  font-size: 13px;
+  color: #BFBFBB;
+}
+
+.context-clear {
+  color: rgba(255,255,255,0.35) !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  padding: var(--sp-4) var(--sp-8) !important;
+  flex-shrink: 0;
+  transition: color 0.15s !important;
+}
+.context-clear:hover { color: rgba(255,255,255,0.7) !important; background: transparent !important; }
+.context-clear span[aria-hidden] { font-size: 10px; }
 
 /* ============================================
    Form body
@@ -503,6 +638,62 @@ onMounted(async () => {
 
 .form-label {
   color: var(--f-color-black-50);
+}
+
+/* ============================================
+   Context Hints (AI analysis reference)
+   ============================================ */
+.context-hints {
+  grid-column: 1 / -1;
+  background: var(--f-color-black);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-default);
+  padding: var(--sp-20);
+  gap: var(--sp-16);
+}
+
+.hint-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.hint-label {
+  color: rgba(255,255,255,0.35);
+}
+
+.hint-text {
+  font-size: 13px;
+  color: #D1D1D1;
+  line-height: 1.6;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-6);
+}
+
+.hint-tag {
+  display: inline-block;
+  padding: var(--sp-3) var(--sp-8);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-default);
+  font-size: 11px;
+  font-family: var(--font-body);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+
+.hint-tag--accent {
+  border-color: rgba(218,41,28,0.4);
+  color: var(--f-color-accent-100);
+}
+
+.hint-tag--muted {
+  color: rgba(255,255,255,0.35);
+  border-color: rgba(255,255,255,0.06);
 }
 
 /* ============================================

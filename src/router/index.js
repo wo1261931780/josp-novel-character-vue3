@@ -25,6 +25,11 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/pages/Dashboard.vue')
+  },
+  {
+    path: '/analyze',
+    name: 'NovelTextAnalysis',
+    component: () => import('@/pages/NovelTextAnalysis.vue')
   }
 ]
 

@@ -23,6 +23,9 @@
           <el-button type="primary" size="large" @click="$router.push('/character/create')">
             创建角色
           </el-button>
+          <el-button size="large" @click="$router.push('/analyze')">
+            分析小说文本
+          </el-button>
           <el-button size="large" @click="$router.push('/library')">
             角色库
           </el-button>
@@ -101,23 +104,23 @@
 const features = [
   {
     num: '01',
+    title: '小说文本分析',
+    desc: '输入任意小说片段，AI 解析题材、文风、地点、技能与世界观，构建完整角色宇宙'
+  },
+  {
+    num: '02',
     title: '多维度角色塑造',
     desc: '从基础信息到性格特点，从背景环境到外貌描写全方位定义角色每一个切面'
   },
   {
-    num: '02',
+    num: '03',
     title: 'AI 智能生成',
     desc: '基于小说类型和角色设定，AI 自动生成完整的角色档案与深度描写'
   },
   {
-    num: '03',
-    title: '生平时间线',
-    desc: '模拟真实人生轨迹，生成符合角色设定的重要事件与人生节点'
-  },
-  {
     num: '04',
-    title: '六维性格雷达',
-    desc: '理智、意志、情感、欲望、信念、韧性 — 可视化呈现角色内在特质'
+    title: '生平时间线 & 六维雷达',
+    desc: '模拟真实人生轨迹，生成重要事件；六维雷达图可视化理智、意志、情感、欲望、信念与韧性'
   }
 ]
 
