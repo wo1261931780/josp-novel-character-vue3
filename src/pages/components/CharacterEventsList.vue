@@ -1,32 +1,42 @@
 <template>
-  <div class="events-timeline">
-    <div
-      v-for="(event, index) in events"
-      :key="event.id"
-      class="timeline-item"
-    >
-      <div class="timeline-marker" :class="markerClass(event.eventType)">
-        {{ index + 1 }}
-      </div>
-      <div class="timeline-content">
-        <div class="event-header">
-          <h4 class="event-name">{{ event.eventName }}</h4>
-          <el-tag size="small" :type="tagType(event.eventType)">
-            {{ event.eventType }}
-          </el-tag>
-        </div>
-        <p class="event-desc">{{ event.eventDesc }}</p>
-        <div class="event-meta">
-          <span class="event-age">年龄：{{ event.age }}岁</span>
-          <span class="event-importance">
-            重要度：
-            <el-rate :model-value="event.importance" disabled size="small" />
-          </span>
-        </div>
-      </div>
+  <div class="events-list">
+    <div class="events-empty" v-if="!events || events.length === 0">
+      <p class="label-upper">暂无生平经历</p>
     </div>
-    <div v-if="events.length === 0" class="empty-events">
-      <p>暂无生平经历</p>
+
+    <div class="events-scroll" v-else>
+      <article
+        class="event-card"
+        v-for="(event, index) in events"
+        :key="event.id"
+      >
+        <div class="event-card-left">
+          <div class="event-num label-micro">{{ String(index + 1).padStart(2, '0') }}</div>
+          <div class="event-line" v-if="index < events.length - 1"></div>
+        </div>
+
+        <div class="event-card-body">
+          <div class="event-card-head">
+            <h4 class="event-name">{{ event.eventName }}</h4>
+            <span class="event-type-tag" :class="typeClass(event.eventType)">
+              {{ event.eventType }}
+            </span>
+          </div>
+          <p class="event-desc">{{ event.eventDesc }}</p>
+          <div class="event-meta">
+            <span class="label-micro event-age">&#9679; {{ event.age }}岁</span>
+            <div class="event-stars">
+              <span
+                v-for="s in 5"
+                :key="s"
+                class="star"
+                :class="{ filled: s <= (Number(event.importance) || 3) }"
+                aria-hidden="true"
+              >&#9733;</span>
+            </div>
+          </div>
+        </div>
+      </article>
     </div>
   </div>
 </template>
@@ -36,117 +46,145 @@ defineProps({
   events: { type: Array, default: () => [] }
 })
 
-function markerClass(type) {
-  const map = {
-    '成长': 'growth', '转折': 'turning', '冲突': 'conflict',
-    '成就': 'achievement', '悲剧': 'tragedy'
-  }
-  return map[type] || 'default'
+const TYPE_CLASS = {
+  '成长': 'type--growth',
+  '转折': 'type--turning',
+  '冲突': 'type--conflict',
+  '成就': 'type--achievement',
+  '悲剧': 'type--tragedy'
 }
 
-function tagType(type) {
-  const map = {
-    '成长': 'primary', '转折': 'warning', '冲突': 'danger',
-    '成就': 'success', '悲剧': 'info'
-  }
-  return map[type] || 'info'
+function typeClass(type) {
+  return TYPE_CLASS[type] || 'type--default'
 }
 </script>
 
 <style scoped>
-.events-timeline {
-  padding: 20px 0;
+.events-list {
+  max-width: 800px;
 }
 
-.timeline-item {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
-  position: relative;
-}
-
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  left: 19px;
-  top: 40px;
-  bottom: -30px;
-  width: 2px;
-  background: #e4e7ed;
-}
-
-.timeline-item:last-child::before {
-  display: none;
-}
-
-.timeline-marker {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.events-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-  font-size: 16px;
+  padding: var(--sp-60) 0;
+  color: var(--f-color-black-50);
 }
 
-.timeline-marker.growth { background: #409eff; }
-.timeline-marker.turning { background: #e6a23c; }
-.timeline-marker.conflict { background: #f56c6c; }
-.timeline-marker.achievement { background: #67c23a; }
-.timeline-marker.tragedy { background: #909399; }
-.timeline-marker.default { background: #909399; }
-
-.timeline-content {
-  flex: 1;
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.event-header {
+.events-scroll {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ============================================
+   Event card
+   ============================================ */
+.event-card {
+  display: flex;
+  gap: var(--sp-20);
+}
+
+.event-card-left {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 10px;
+  flex-shrink: 0;
+  width: 40px;
+}
+
+.event-num {
+  width: 40px;
+  height: 40px;
+  background: var(--f-color-black);
+  color: var(--f-color-text-dark);
+  border-radius: var(--radius-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-family: var(--font-body);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.event-line {
+  flex: 1;
+  width: 1px;
+  background: var(--f-color-ui-20);
+  margin: var(--sp-4) 0;
+  min-height: var(--sp-20);
+}
+
+.event-card-body {
+  flex: 1;
+  padding-bottom: var(--sp-30);
+}
+
+.event-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-12);
+  margin-bottom: var(--sp-10);
+  flex-wrap: wrap;
 }
 
 .event-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--f-color-text-light);
+  line-height: 1.3;
 }
+
+/* Event type tag */
+.event-type-tag {
+  display: inline-block;
+  padding: var(--sp-3) var(--sp-8);
+  border: 1px solid;
+  border-radius: var(--radius-default);
+  font-size: 10px;
+  font-family: var(--font-body);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.type--growth   { border-color: #409EFF; color: #409EFF; }
+.type--turning  { border-color: #E6A23C; color: #E6A23C; }
+.type--conflict { border-color: var(--f-color-accent-100); color: var(--f-color-accent-100); }
+.type--achievement { border-color: var(--f-color-success); color: var(--f-color-success); }
+.type--tragedy  { border-color: var(--f-color-black-50); color: var(--f-color-black-50); }
+.type--default  { border-color: var(--f-color-ui-20); color: var(--f-color-black-50); }
 
 .event-desc {
   font-size: 14px;
-  color: #666;
-  line-height: 1.6;
-  margin: 0 0 12px 0;
+  color: var(--f-color-black-60);
+  line-height: 1.7;
+  margin-bottom: var(--sp-12);
 }
 
 .event-meta {
   display: flex;
-  gap: 20px;
-  font-size: 13px;
-  color: #999;
-}
-
-.event-importance {
-  display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--sp-16);
 }
 
-.event-importance :deep(.el-rate) {
-  display: inline-flex;
+.event-age {
+  color: var(--f-color-black-55);
 }
 
-.empty-events {
-  text-align: center;
-  padding: 60px 0;
-  color: #999;
+.event-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  font-size: 12px;
+  color: var(--f-color-ui-20);
+}
+
+.star.filled {
+  color: var(--f-color-accent-100);
 }
 </style>

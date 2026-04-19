@@ -1,42 +1,51 @@
 <template>
   <div class="create-page">
-    <div class="page-header">
-      <el-button text @click="$router.push('/')" class="back-btn">
-        <span>&larr;</span> 返回
-      </el-button>
-      <h1>创建角色</h1>
-    </div>
+    <!-- ============================================
+         Header — White
+         ============================================ -->
+    <header class="create-header">
+      <div class="create-header-inner">
+        <el-button text @click="$router.push('/')" class="back-link">
+          <span aria-hidden="true">&#8592;</span>
+          <span class="label-upper">返回</span>
+        </el-button>
+        <div class="header-title-block">
+          <h1 class="header-title">创建角色</h1>
+          <p class="label-micro header-sub">填写角色基础信息，AI 将自动完善档案</p>
+        </div>
+        <div class="header-spacer"></div>
+      </div>
+    </header>
 
-    <div class="form-container">
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-position="top"
-        class="character-form"
-      >
-        <el-card class="form-card">
-          <template #header>
-            <div class="card-header">
-              <span class="card-icon">&#128100;</span>
-              <span>基础信息</span>
+    <!-- ============================================
+         Form Body — White editorial
+         ============================================ -->
+    <main class="create-main">
+      <div class="create-form-wrapper">
+
+        <!-- Section: Basic Info -->
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="section-num label-micro">01</span>
+            <h2 class="section-title">基础信息</h2>
+          </div>
+          <div class="form-grid">
+            <div class="form-row form-row--full">
+              <label class="form-label label-micro">角色姓名</label>
+              <div class="input-row">
+                <el-input
+                  v-model="form.name"
+                  placeholder="输入角色姓名（2-20个字符）"
+                  maxlength="20"
+                  show-word-limit
+                  style="flex:1"
+                />
+                <el-button @click="randomName" class="random-btn" title="随机">&#9679;</el-button>
+              </div>
             </div>
-          </template>
 
-          <el-form-item label="角色姓名" prop="name">
-            <div class="input-with-random">
-              <el-input
-                v-model="form.name"
-                placeholder="输入角色姓名（2-20个字符）"
-                maxlength="20"
-                show-word-limit
-              />
-              <el-button @click="randomName" class="random-btn">🎲</el-button>
-            </div>
-          </el-form-item>
-
-          <el-form-item label="性别" prop="gender">
-            <div class="radio-group-wrapper">
+            <div class="form-row">
+              <label class="form-label label-micro">性别</label>
               <el-radio-group v-model="form.gender">
                 <el-radio
                   v-for="opt in genderOptions"
@@ -46,39 +55,41 @@
                   {{ opt.label }}
                 </el-radio>
               </el-radio-group>
-              <el-button @click="randomGender" class="random-btn small">🎲</el-button>
             </div>
-          </el-form-item>
 
-          <el-form-item label="年龄" prop="age">
-            <div class="input-with-random">
-              <el-input-number
-                v-model="form.age"
-                :min="1"
-                :max="999"
-                placeholder="输入年龄"
-                style="width: 100%"
-              />
-              <el-button @click="randomAge" class="random-btn">🎲</el-button>
+            <div class="form-row">
+              <label class="form-label label-micro">年龄</label>
+              <div class="input-row">
+                <el-input-number
+                  v-model="form.age"
+                  :min="1"
+                  :max="999"
+                  style="width: 100%"
+                />
+                <el-button @click="randomAge" class="random-btn" title="随机">&#9679;</el-button>
+              </div>
             </div>
-          </el-form-item>
-        </el-card>
+          </div>
+        </section>
 
-        <el-card class="form-card">
-          <template #header>
-            <div class="card-header">
-              <span class="card-icon">&#127917;</span>
-              <span>角色设定</span>
-            </div>
-          </template>
+        <!-- Section divider -->
+        <div class="form-divider"></div>
 
-          <el-form-item label="小说类型" prop="novelTypeId">
-            <div class="type-selector">
-              <div class="input-with-random">
+        <!-- Section: Character Setup -->
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="section-num label-micro">02</span>
+            <h2 class="section-title">角色设定</h2>
+          </div>
+          <div class="form-grid">
+
+            <div class="form-row form-row--full">
+              <label class="form-label label-micro">小说类型</label>
+              <div class="input-row input-row--tri">
                 <el-select
                   v-model="form.category"
-                  placeholder="选择小说大类"
-                  style="width: 48%"
+                  placeholder="选择大类"
+                  style="flex:1"
                   @change="onCategoryChange"
                 >
                   <el-option
@@ -90,8 +101,8 @@
                 </el-select>
                 <el-select
                   v-model="form.novelTypeId"
-                  placeholder="选择具体类型"
-                  style="width: 48%"
+                  placeholder="具体类型"
+                  style="flex:1"
                   :disabled="!form.category"
                   filterable
                   @focus="loadTypesByCategory"
@@ -104,82 +115,89 @@
                     :value="type.id"
                   />
                 </el-select>
-                <el-button @click="randomType" class="random-btn">🎲</el-button>
+                <el-button @click="randomType" class="random-btn" title="随机">&#9679;</el-button>
               </div>
             </div>
-          </el-form-item>
 
-          <el-form-item label="性格特点" prop="personality">
-            <div class="input-with-random">
-              <el-select v-model="form.personality" placeholder="选择性格" style="width: 100%" filterable>
-                <el-option
-                  v-for="opt in personalityOptions"
-                  :key="opt.value"
-                  :label="opt.label"
-                  :value="opt.value"
-                />
-              </el-select>
-              <el-button @click="randomPersonality" class="random-btn">🎲</el-button>
+            <div class="form-row">
+              <label class="form-label label-micro">性格特点</label>
+              <div class="input-row">
+                <el-select v-model="form.personality" placeholder="选择性格" style="flex:1" filterable>
+                  <el-option
+                    v-for="opt in personalityOptions"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </el-select>
+                <el-button @click="randomPersonality" class="random-btn" title="随机">&#9679;</el-button>
+              </div>
             </div>
-          </el-form-item>
 
-          <el-form-item label="背景环境" prop="background">
-            <div class="input-with-random">
-              <el-select v-model="form.background" placeholder="选择背景" style="width: 100%" filterable @change="onBackgroundChange">
-                <el-option
-                  v-for="bg in compatibleBackgrounds"
-                  :key="bg"
-                  :label="bg"
-                  :value="bg"
-                />
-              </el-select>
-              <el-button @click="randomBackground" class="random-btn">🎲</el-button>
+            <div class="form-row">
+              <label class="form-label label-micro">背景环境</label>
+              <div class="input-row">
+                <el-select v-model="form.background" placeholder="选择背景" style="flex:1" filterable @change="onBackgroundChange">
+                  <el-option
+                    v-for="bg in compatibleBackgrounds"
+                    :key="bg"
+                    :label="bg"
+                    :value="bg"
+                  />
+                </el-select>
+                <el-button @click="randomBackground" class="random-btn" title="随机">&#9679;</el-button>
+              </div>
             </div>
-          </el-form-item>
 
-          <el-form-item label="出生地" prop="birthplace">
-            <div class="input-with-random">
-              <el-select v-model="form.birthplace" placeholder="选择出生地" style="width: 100%" filterable>
-                <el-option
-                  v-for="place in birthplaces"
-                  :key="place"
-                  :label="place"
-                  :value="place"
-                />
-              </el-select>
-              <el-button @click="randomBirthplace" class="random-btn">🎲</el-button>
+            <div class="form-row form-row--full">
+              <label class="form-label label-micro">出生地</label>
+              <div class="input-row">
+                <el-select v-model="form.birthplace" placeholder="选择出生地" style="flex:1" filterable>
+                  <el-option
+                    v-for="place in birthplaces"
+                    :key="place"
+                    :label="place"
+                    :value="place"
+                  />
+                </el-select>
+                <el-button @click="randomBirthplace" class="random-btn" title="随机">&#9679;</el-button>
+              </div>
             </div>
-          </el-form-item>
 
-          <el-form-item label="样貌" prop="appearance">
-            <div class="appearance-wrapper">
-              <el-radio-group v-model="form.appearance" class="appearance-group">
-                <el-radio
-                  v-for="opt in appearanceOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </el-radio>
-              </el-radio-group>
-              <el-button @click="randomAppearance" class="random-btn small">🎲</el-button>
+            <div class="form-row form-row--full">
+              <label class="form-label label-micro">外貌类型</label>
+              <div class="input-row">
+                <el-radio-group v-model="form.appearance" class="appearance-group">
+                  <el-radio
+                    v-for="opt in appearanceOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </el-radio>
+                </el-radio-group>
+                <el-button @click="randomAppearance" class="random-btn" title="随机">&#9679;</el-button>
+              </div>
             </div>
-          </el-form-item>
-        </el-card>
 
+          </div>
+        </section>
+
+        <!-- Action row -->
         <div class="form-actions">
-          <el-button size="large" @click="resetForm">重置</el-button>
+          <el-button @click="resetForm" style="width:140px">重置</el-button>
           <el-button
             type="primary"
-            size="large"
             :loading="submitting"
             @click="handleSubmit"
+            style="width:200px"
           >
             一键生成角色
           </el-button>
         </div>
-      </el-form>
-    </div>
+
+      </div>
+    </main>
   </div>
 </template>
 
@@ -194,17 +212,14 @@ import { getGenderEnums, getPersonalityEnums, getBackgroundEnums, getAppearanceE
 const router = useRouter()
 const characterStore = useCharacterStore()
 
-const formRef = ref(null)
 const submitting = ref(false)
 const categories = ref([])
 const typeList = ref([])
 const birthplaces = ref([])
 const compatibleBackgrounds = ref([])
 
-// 枚举选项（从后端 API 加载）
 const genderOptions = ref([])
 const personalityOptions = ref([])
-const backgroundOptions = ref([])
 const appearanceOptions = ref([])
 
 const form = reactive({
@@ -219,106 +234,57 @@ const form = reactive({
   novelTypeId: null
 })
 
-const rules = {
-  name: [
-    { required: true, message: '请输入角色姓名', trigger: 'blur' },
-    { min: 2, max: 20, message: '姓名长度在 2 到 20 个字符', trigger: 'blur' }
-  ],
-  gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
-  age: [{ required: true, message: '请输入年龄', trigger: 'blur' }],
-  personality: [{ required: true, message: '请选择性格', trigger: 'change' }],
-  background: [{ required: true, message: '请选择背景', trigger: 'change' }],
-  birthplace: [{ required: true, message: '请选择出生地', trigger: 'change' }],
-  appearance: [{ required: true, message: '请选择样貌', trigger: 'change' }]
-}
+// Random pools
+const surnames = ['叶', '林', '萧', '苏', '白', '楚', '秦', '赵', '周', '吴', '郑', '王', '张', '刘', '陈', '杨', '黄', '李', '郭', '慕容', '上官', '欧阳', '司马', '诸葛']
+const maleNames = ['尘', '天', '风', '云', '霄', '寒', '墨', '轩', '羽', '辰', '渊', '枫', '泽', '凌', '逸', '言']
+const femaleNames = ['雪', '月', '灵', '瑶', '倩', '雅', '诗', '琳', '欣', '婷', '琴', '韵', '璇', '雨', '烟', '蝶', '霞', '云']
+const neutralNames = ['无心', '逍遥', '醉月', '听风', '流云', '惊鸿', '落霞', '孤鸿', '凌波', '清羽', '寒烟']
 
-// 随机数据池
-const surnames = ['叶', '林', '萧', '苏', '白', '楚', '秦', '赵', '周', '吴', '郑', '王', '张', '刘', '陈', '杨', '黄', '李', '郭', '林', '慕容', '上官', '欧阳', '司马', '诸葛']
-const maleNames = ['尘', '天', '风', '云', '霄', '寒', '墨', '轩', '羽', '辰', '渊', '枫', '擎', '泽', '凌', '然', '逸', '辰', '逸', '言']
-const femaleNames = ['雪', '月', '灵', '瑶', '倩', '雅', '诗', '琳', '欣', '婷', '雅', '琴', '韵', '璇', '雨', '烟', '蝶', '霜', '霞', '云']
-const neutralNames = ['无心', '逍遥', '醉月', '听风', '问柳', '流云', '惊鸿', '落霞', '孤鸿', '照晚', '凌波', '惊雪', '清羽', '寒烟', '碧落']
-
-function randomChoice(arr) {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
+function rc(arr) { return arr[Math.floor(Math.random() * arr.length)] }
 
 function randomName() {
-  const gender = form.gender
-  const surname = randomChoice(surnames)
-  let name
-
-  if (gender === '男') {
-    name = surname + randomChoice(maleNames)
-  } else if (gender === '女') {
-    name = surname + randomChoice(femaleNames)
-  } else {
-    name = surname + randomChoice(neutralNames)
-  }
-  form.name = name
+  const s = rc(surnames)
+  const n = form.gender === '女' ? rc(femaleNames) : form.gender === '男' ? rc(maleNames) : rc(neutralNames)
+  form.name = s + n
 }
 
-function randomGender() {
-  const opts = genderOptions.value
-  if (opts.length > 0) {
-    form.gender = randomChoice(opts).value
-  }
-}
-
-function randomAge() {
-  form.age = Math.floor(Math.random() * 80) + 16
-}
-
+function randomAge() { form.age = Math.floor(Math.random() * 80) + 16 }
 function randomPersonality() {
-  const opts = personalityOptions.value
-  if (opts.length > 0) {
-    form.personality = randomChoice(opts).value
-  }
+  if (personalityOptions.value.length) form.personality = rc(personalityOptions.value).value
 }
-
-function randomBackground() {
-  const opts = compatibleBackgrounds.value.length > 0 ? compatibleBackgrounds.value : backgroundOptions.value.map(b => b.value)
-  if (opts.length > 0) {
-    form.background = randomChoice(opts)
-    onBackgroundChange()
-  }
-}
-
-function randomBirthplace() {
-  if (birthplaces.value.length > 0) {
-    form.birthplace = randomChoice(birthplaces.value)
-  }
-}
-
 function randomAppearance() {
-  const opts = appearanceOptions.value
-  if (opts.length > 0) {
-    form.appearance = randomChoice(opts).value
-  }
+  if (appearanceOptions.value.length) form.appearance = rc(appearanceOptions.value).value
+}
+function randomBirthplace() {
+  if (birthplaces.value.length) form.birthplace = rc(birthplaces.value)
 }
 
 async function randomType() {
-  if (categories.value.length > 0) {
-    const cat = randomChoice(categories.value)
-    form.category = cat
-    await loadTypesByCategory()
-    if (typeList.value.length > 0) {
-      form.novelTypeId = randomChoice(typeList.value).id
-      await loadCompatibleBackgrounds()
-    }
+  if (!categories.value.length) return
+  form.category = rc(categories.value)
+  await loadTypesByCategory()
+  if (typeList.value.length) {
+    form.novelTypeId = rc(typeList.value).id
+    await loadCompatibleBackgrounds()
+  }
+}
+
+async function randomBackground() {
+  const opts = compatibleBackgrounds.value.length ? compatibleBackgrounds.value : appearanceOptions.value.map(() => '')
+  if (opts.length) {
+    form.background = rc(compatibleBackgrounds.value.length ? compatibleBackgrounds.value : [])
+    await onBackgroundChange()
   }
 }
 
 async function loadCategories() {
   try {
     categories.value = await getCategories()
-    // 默认选中第一个
-    if (categories.value.length > 0 && !form.category) {
+    if (categories.value.length && !form.category) {
       form.category = categories.value[0]
       await loadTypesByCategory()
     }
-  } catch (error) {
-    console.error('加载类别失败', error)
-  }
+  } catch (e) { console.error('加载类别失败', e) }
 }
 
 async function onCategoryChange() {
@@ -329,68 +295,49 @@ async function onCategoryChange() {
   await loadTypesByCategory()
 }
 
-async function onNovelTypeChange() {
-  await loadCompatibleBackgrounds()
-}
+async function onNovelTypeChange() { await loadCompatibleBackgrounds() }
 
 async function loadTypesByCategory() {
   if (!form.category) return
   try {
     typeList.value = await getTypesByCategory(form.category)
-    // 如果只有一个选项，自动选中
     if (typeList.value.length === 1) {
       form.novelTypeId = typeList.value[0].id
       await loadCompatibleBackgrounds()
     }
-  } catch (error) {
-    console.error('加载类型失败', error)
-  }
+  } catch (e) { console.error('加载类型失败', e) }
 }
 
 async function loadCompatibleBackgrounds() {
-  if (!form.novelTypeId) {
-    compatibleBackgrounds.value = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代']
-    return
-  }
+  if (!form.novelTypeId) return
   try {
     compatibleBackgrounds.value = await getCompatibleBackgrounds(form.novelTypeId)
-    // 如果当前 background 不在兼容列表中，清空
     if (form.background && !compatibleBackgrounds.value.includes(form.background)) {
       form.background = ''
       form.birthplace = ''
     }
-  } catch (error) {
-    console.error('加载兼容背景失败', error)
+  } catch (e) {
+    console.error('加载兼容背景失败', e)
     compatibleBackgrounds.value = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代']
   }
 }
 
 async function onBackgroundChange() {
   form.birthplace = ''
-  if (form.background) {
-    try {
-      birthplaces.value = await getBirthplaces(form.background)
-      if (birthplaces.value.length > 0) {
-        form.birthplace = birthplaces.value[0]
-      }
-    } catch (error) {
-      console.error('加载出生地失败', error)
-    }
-  }
+  if (!form.background) return
+  try {
+    birthplaces.value = await getBirthplaces(form.background)
+    if (birthplaces.value.length) form.birthplace = birthplaces.value[0]
+  } catch (e) { console.error('加载出生地失败', e) }
 }
 
 async function handleSubmit() {
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) return
-
   submitting.value = true
   try {
-    const result = await characterStore.create(form)
-    console.log('====== CREATE RESULT ID:', result?.id, '======')
+    const { category, ...payload } = form
+    const result = await characterStore.create(payload)
     ElMessage.success('角色创建成功')
-
-    if (result && result.id) {
-      console.log('====== NAVIGATING TO CHARACTER:', result.id, '======')
+    if (result?.id) {
       ElMessage.info('开始生成角色详情，请稍候...')
       await characterStore.generate(result.id)
       ElMessage.success('角色生成完成')
@@ -404,47 +351,31 @@ async function handleSubmit() {
 }
 
 function resetForm() {
-  formRef.value.resetFields()
-  form.age = 25
-  form.gender = genderOptions.value[0]?.value ?? 1
-  form.personality = personalityOptions.value[0]?.value ?? ''
-  form.appearance = appearanceOptions.value[0]?.value ?? '平庸'
-  form.category = categories.value[0] || ''
-  form.novelTypeId = null
-  form.background = ''
-  form.birthplace = ''
+  Object.assign(form, {
+    name: '', gender: genderOptions.value[0]?.value ?? '男',
+    age: 25, personality: personalityOptions.value[0]?.value ?? '',
+    background: '', birthplace: '', appearance: appearanceOptions.value[0]?.value ?? '平庸',
+    category: categories.value[0] || '', novelTypeId: null
+  })
   typeList.value = []
   birthplaces.value = []
-  compatibleBackgrounds.value = backgroundOptions.value.map(b => b.value)
+  compatibleBackgrounds.value = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代']
 }
 
 async function loadEnums() {
   try {
-    const [genderRes, personalityRes, backgroundRes, appearanceRes] = await Promise.all([
-      getGenderEnums(),
-      getPersonalityEnums(),
-      getBackgroundEnums(),
-      getAppearanceEnums()
+    const [g, p, , a] = await Promise.all([
+      getGenderEnums(), getPersonalityEnums(),
+      getBackgroundEnums(), getAppearanceEnums()
     ])
-    genderOptions.value = genderRes || []
-    personalityOptions.value = personalityRes || []
-    backgroundOptions.value = backgroundRes || []
-    appearanceOptions.value = appearanceRes || []
-    // 默认选中第一个
-    if (genderOptions.value.length > 0) {
-      form.gender = genderOptions.value[0].value
-    }
-    if (personalityOptions.value.length > 0) {
-      form.personality = personalityOptions.value[0].value
-    }
-    if (appearanceOptions.value.length > 0) {
-      form.appearance = appearanceOptions.value[0].value
-    }
-    // compatibleBackgrounds 初始为全部背景
-    compatibleBackgrounds.value = backgroundOptions.value.map(b => b.value)
-  } catch (error) {
-    console.error('加载枚举失败', error)
-  }
+    genderOptions.value = g || []
+    personalityOptions.value = p || []
+    appearanceOptions.value = a || []
+    if (genderOptions.value.length) form.gender = genderOptions.value[0].value
+    if (personalityOptions.value.length) form.personality = personalityOptions.value[0].value
+    if (appearanceOptions.value.length) form.appearance = appearanceOptions.value[0].value
+    compatibleBackgrounds.value = ['现代', '古代', '架空古代', '玄幻', '仙侠', '近代']
+  } catch (e) { console.error('加载枚举失败', e) }
 }
 
 onMounted(async () => {
@@ -454,201 +385,224 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* ============================================
+   Page
+   ============================================ */
 .create-page {
   min-height: 100vh;
-  background: #f5f7fa;
-  padding: 20px;
+  background: var(--f-color-ui-0);
 }
 
-.page-header {
+/* ============================================
+   Header
+   ============================================ */
+.create-header {
+  background: var(--f-color-ui-0);
+  border-bottom: 1px solid var(--f-color-ui-20);
+}
+
+.create-header-inner {
   max-width: 900px;
-  margin: 0 auto 30px;
+  margin: 0 auto;
+  padding: var(--sp-24);
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--sp-20);
 }
 
-.back-btn {
-  font-size: 18px;
-  color: #666;
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  color: var(--f-color-black-50) !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent !important;
+  transition: color 0.15s !important;
+}
+.back-link:hover { color: var(--f-color-text-light) !important; background: transparent !important; }
+.back-link span[aria-hidden] { font-size: 16px; }
+
+.header-title-block { flex: 1; }
+
+.header-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--f-color-text-light);
+  margin-bottom: var(--sp-4);
 }
 
-.back-btn:hover {
-  color: #667eea;
+.header-sub { color: var(--f-color-black-50); }
+
+.header-spacer { width: 60px; }
+
+/* ============================================
+   Form body
+   ============================================ */
+.create-main {
+  padding: var(--sp-48) var(--sp-24) var(--sp-60);
 }
 
-.page-header h1 {
-  font-size: 28px;
-  color: #333;
-  margin: 0;
-}
-
-.form-container {
+.create-form-wrapper {
   max-width: 900px;
   margin: 0 auto;
 }
 
-.character-form {
+/* ============================================
+   Form section
+   ============================================ */
+.form-section {
+  padding: var(--sp-32) 0;
+}
+
+.form-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-16);
+  margin-bottom: var(--sp-32);
+}
+
+.section-num {
+  color: var(--f-color-accent-100);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--f-color-text-light);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.form-divider {
+  height: 1px;
+  background: var(--f-color-ui-20);
+}
+
+/* ============================================
+   Form grid
+   ============================================ */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-24) var(--sp-32);
+}
+
+.form-row {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--sp-8);
 }
 
-.form-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+.form-row--full {
+  grid-column: 1 / -1;
 }
 
-.form-card :deep(.el-card__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  font-size: 18px;
-  font-weight: 600;
-  padding: 16px 20px;
-  border-bottom: none;
+.form-label {
+  color: var(--f-color-black-50);
 }
 
-.card-header {
+/* ============================================
+   Input row (with random btn)
+   ============================================ */
+.input-row {
   display: flex;
+  gap: var(--sp-8);
   align-items: center;
-  gap: 10px;
 }
 
-.card-icon {
-  font-size: 24px;
-}
-
-.input-with-random {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-}
-
-.input-with-random > .el-input,
-.input-with-random > .el-select,
-.input-with-random > .el-input-number {
+.input-row > *:first-child {
   flex: 1;
 }
 
+.input-row--tri {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--sp-8);
+  align-items: center;
+}
+
 .random-btn {
-  width: 48px;
-  height: 40px;
-  font-size: 18px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  padding: 0 !important;
+  border: 1px solid var(--f-color-ui-20) !important;
+  background: var(--f-color-ui-0) !important;
+  color: var(--f-color-black-50) !important;
+  font-size: 18px !important;
+  border-radius: var(--radius-default) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: border-color 0.15s, color 0.15s !important;
   flex-shrink: 0;
 }
-
 .random-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  border-color: var(--f-color-accent-100) !important;
+  color: var(--f-color-accent-100) !important;
+  background: var(--f-color-ui-0) !important;
+  opacity: 1 !important;
 }
 
-.random-btn.small {
-  width: 40px;
-  height: 32px;
-  font-size: 14px;
-}
-
-.radio-group-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.radio-group-wrapper .el-radio-group {
-  display: flex;
-  gap: 10px;
-}
-
-.type-selector .input-with-random {
-  flex-wrap: wrap;
-}
-
-.type-selector .input-with-random > * {
-  width: 48%;
-}
-
-@media (max-width: 600px) {
-  .type-selector .input-with-random > * {
-    width: 100%;
-  }
-}
-
-.appearance-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+/* ============================================
+   Appearance radio group
+   ============================================ */
 .appearance-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--sp-10);
 }
 
 .appearance-group :deep(.el-radio) {
-  margin-right: 0;
-  padding: 8px 16px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  transition: all 0.3s;
+  margin-right: 0 !important;
+  padding: var(--sp-8) var(--sp-16);
+  border: 1px solid var(--f-color-ui-20);
+  border-radius: var(--radius-default);
+  transition: border-color 0.15s, background 0.15s;
 }
-
 .appearance-group :deep(.el-radio.is-checked) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
-  color: #fff;
+  border-color: var(--f-color-accent-100);
+  background: rgba(218,41,28,0.04);
+}
+.appearance-group :deep(.el-radio__label) {
+  font-size: 13px !important;
 }
 
+/* ============================================
+   Form actions
+   ============================================ */
 .form-actions {
   display: flex;
+  gap: var(--sp-16);
   justify-content: center;
-  gap: 20px;
-  padding: 20px 0;
+  padding-top: var(--sp-40);
+  border-top: 1px solid var(--f-color-ui-20);
 }
 
-.form-actions .el-button {
-  padding: 16px 40px;
-  font-size: 16px;
-  border-radius: 10px;
-}
-
-.form-actions .el-button--primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-}
-
-.form-actions .el-button--primary:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-}
-
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 768px) {
-  .create-page {
-    padding: 15px;
+  .create-header-inner {
+    flex-wrap: wrap;
+    gap: var(--sp-12);
+    padding: var(--sp-16) var(--sp-20);
   }
+  .header-spacer { display: none; }
+  .header-title { font-size: 18px; }
+  .create-main { padding: var(--sp-30) var(--sp-20) var(--sp-48); }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-row--full { grid-column: 1; }
+  .input-row--tri { grid-template-columns: 1fr auto; }
+  .form-actions { flex-direction: column; align-items: stretch; }
+  .form-actions .el-button { width: 100% !important; }
+}
 
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .page-header h1 {
-    font-size: 24px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .form-actions .el-button {
-    width: 100%;
-  }
+@media (max-width: 480px) {
+  .input-row--tri { grid-template-columns: 1fr; }
 }
 </style>

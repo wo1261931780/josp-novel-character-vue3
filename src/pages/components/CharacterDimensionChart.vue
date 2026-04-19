@@ -1,5 +1,10 @@
 <template>
-  <div class="dimension-chart" ref="chartRef"></div>
+  <div class="dimension-wrap">
+    <div v-if="!dimensions" class="dim-empty">
+      <p class="label-micro">暂无维度数据</p>
+    </div>
+    <div v-else ref="chartRef" class="dim-chart"></div>
+  </div>
 </template>
 
 <script setup>
@@ -13,13 +18,12 @@ const props = defineProps({
 const chartRef = ref(null)
 let chart = null
 
-const DESCS = {
-  '理智': v => v > 70 ? '冷静理性，善于分析' : v > 40 ? '思考与冲动并存' : '易感情用事',
-  '意志': v => v > 70 ? '百折不挠，意志如钢' : v > 40 ? '普通意志力' : '轻易动摇放弃',
-  '情感': v => v > 70 ? '重情重义，人情味浓' : v > 40 ? '情感能力一般' : '冷漠疏离',
-  '欲望': v => v > 70 ? '野心勃勃，渴求权力' : v > 40 ? '有目标追求' : '淡泊无欲',
-  '信念': v => v > 70 ? '坚守原则，毫不动摇' : v > 40 ? '有道德底线' : '缺乏立场原则',
-  '韧性': v => v > 70 ? '历经苦难，浴火重生' : v > 40 ? '能承受压力' : '脆弱易碎'
+const LABELS = ['理智', '意志', '情感', '欲望', '信念', '韧性']
+
+function getColor(val) {
+  if (val >= 70) return '#DA291C'
+  if (val >= 40) return '#8F8F8F'
+  return '#D2D2D2'
 }
 
 function render() {
@@ -28,64 +32,108 @@ function render() {
 
   chart = echarts.init(chartRef.value)
   const d = props.dimensions
+  const values = [
+    d.rationality || 50, d.willpower || 50, d.empathy || 50,
+    d.ambition || 50, d.conviction || 50, d.resilience || 50
+  ]
 
   chart.setOption({
-    title: {
-      text: '命运六维度',
-      left: 'center',
-      textStyle: { fontSize: 16, fontWeight: 600 }
-    },
+    backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
+      backgroundColor: 'rgba(30,30,30,0.95)',
+      borderColor: 'transparent',
+      borderRadius: 2,
+      padding: [8, 12],
+      textStyle: { color: '#fff', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' },
       formatter(params) {
         const v = params.value
-        return `<strong>${params.name}</strong><br/>
-                指数：${v} / 100<br/>
-                <span style="color:#888">${DESCS[params.name]?.(v) || ''}</span>`
+        return `<strong>${params.name}</strong>：${v}`
       }
     },
     radar: {
-      indicator: [
-        { name: '理智', max: 100 }, { name: '意志', max: 100 },
-        { name: '情感', max: 100 }, { name: '欲望', max: 100 },
-        { name: '信念', max: 100 }, { name: '韧性', max: 100 }
-      ],
-      radius: '65%',
-      center: ['50%', '55%'],
-      axisName: { color: '#333', fontSize: 13, fontWeight: 600 },
+      indicator: LABELS.map((name, i) => ({
+        name,
+        max: 100,
+        axisName: {
+          color: '#8F8F8F',
+          fontSize: 12,
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontWeight: '400'
+        }
+      })),
+      radius: '68%',
+      center: ['50%', '52%'],
       splitNumber: 4,
       axisTick: { show: false },
-      axisLine: { show: true },
-      splitLine: { lineStyle: { color: '#e4e7ed', width: 1 } },
-      splitArea: {
-        areaStyle: { color: ['#fafafa', '#f5f5f5', '#eeeeee', '#e8e8e8'] }
-      }
+      axisLine: { show: true, lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)', width: 1 } },
+      splitArea: { show: false },
+      shape: 'polygon'
     },
     series: [{
       type: 'radar',
       data: [{
-        value: [
-          d.rationality || 50, d.willpower || 50, d.empathy || 50,
-          d.ambition || 50, d.conviction || 50, d.resilience || 50
-        ],
+        value: values,
         name: '六维度',
-        lineStyle: { color: '#667eea', width: 2 },
-        areaStyle: { color: 'rgba(102, 126, 234, 0.25)' },
-        itemStyle: { color: '#667eea' },
-        label: { show: true, formatter: '{c}', fontSize: 11, color: '#667eea' }
+        lineStyle: {
+          color: '#DA291C',
+          width: 1.5,
+          type: 'solid'
+        },
+        areaStyle: {
+          color: 'rgba(218, 41, 28, 0.15)'
+        },
+        itemStyle: {
+          color: '#DA291C',
+          borderColor: 'transparent'
+        },
+        label: {
+          show: true,
+          formatter: '{c}',
+          fontSize: 11,
+          color: '#DA291C',
+          fontFamily: 'Arial, Helvetica, sans-serif'
+        },
+        symbol: 'circle',
+        symbolSize: 5
       }]
     }]
   })
 }
 
-watch(() => props.dimensions, () => { render() }, { immediate: true, deep: true })
-onMounted(() => { if (props.dimensions) render() })
-onBeforeUnmount(() => { if (chart) { chart.dispose(); chart = null } })
+function handleResize() {
+  chart?.resize()
+}
+
+watch(() => props.dimensions, () => { render() }, { immediate: false, deep: false })
+
+onMounted(() => {
+  if (props.dimensions) render()
+  window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  if (chart) { chart.dispose(); chart = null }
+})
 </script>
 
 <style scoped>
-.dimension-chart {
+.dimension-wrap {
   width: 100%;
-  height: 340px;
+}
+
+.dim-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 280px;
+  color: var(--f-color-black-50);
+}
+
+.dim-chart {
+  width: 100%;
+  height: 300px;
 }
 </style>

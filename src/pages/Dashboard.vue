@@ -1,80 +1,119 @@
 <template>
   <div class="dashboard-page">
-    <div class="page-header">
-      <h1>数据看板</h1>
-      <el-button text @click="$router.push('/')">
-        &larr; 返回首页
-      </el-button>
-    </div>
-
-    <div v-loading="loading" class="dashboard-content">
-      <div class="stats-cards">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2)">
-            &#128100;
-          </div>
-          <div class="stat-info">
-            <p class="stat-label">总角色数</p>
-            <p class="stat-value">{{ stats.totalCharacters || 0 }}</p>
-          </div>
+    <!-- ============================================
+         Header — Dark Surface
+         ============================================ -->
+    <header class="dash-header">
+      <div class="dash-header-inner">
+        <el-button text @click="$router.push('/')" class="back-btn">
+          <span aria-hidden="true">&#8592;</span>
+          <span class="label-upper">返回首页</span>
+        </el-button>
+        <div class="header-center">
+          <h1 class="dash-title">数据看板</h1>
+          <p class="label-micro dash-sub">角色库统计概览</p>
         </div>
+        <div class="header-spacer"></div>
+      </div>
+    </header>
 
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c)">
-            &#128200;
-          </div>
-          <div class="stat-info">
-            <p class="stat-label">本月新增</p>
-            <p class="stat-value">{{ stats.monthNewCharacters || 0 }}</p>
-          </div>
+    <!-- ============================================
+         Stats Cards — Dark Surface
+         ============================================ -->
+    <section class="stats-section" v-if="stats.totalCharacters">
+      <div class="stats-inner">
+        <div class="stat-card" v-for="s in statCards" :key="s.label">
+          <p class="label-micro stat-label">{{ s.label }}</p>
+          <p class="stat-value">{{ s.value }}</p>
+          <p class="stat-note" v-if="s.note">{{ s.note }}</p>
         </div>
       </div>
+    </section>
 
-      <div class="charts-grid">
-        <el-card class="chart-card">
-          <template #header>
-            <span>小说类型分布</span>
-          </template>
-          <div ref="novelTypeChartRef" class="chart-container"></div>
-        </el-card>
+    <!-- ============================================
+         Charts — White editorial panels
+         ============================================ -->
+    <main class="dash-main">
+      <div class="dash-main-inner" v-loading="loading">
 
-        <el-card class="chart-card">
-          <template #header>
-            <span>性格特点分布</span>
-          </template>
-          <div ref="personalityChartRef" class="chart-container"></div>
-        </el-card>
+        <!-- Section: Type Distribution -->
+        <section class="chart-section">
+          <div class="chart-section-head">
+            <p class="label-micro chart-label">分布统计</p>
+            <h2 class="chart-title">小说类型分布</h2>
+          </div>
+          <div class="chart-container">
+            <div ref="typeChartRef" class="chart-canvas"></div>
+          </div>
+        </section>
 
-        <el-card class="chart-card wide">
-          <template #header>
-            <span>月度新增趋势</span>
-          </template>
-          <div ref="trendChartRef" class="chart-container wide"></div>
-        </el-card>
+        <!-- Section: Personality -->
+        <section class="chart-section">
+          <div class="chart-section-head">
+            <p class="label-micro chart-label">性格分布</p>
+            <h2 class="chart-title">性格特点统计</h2>
+          </div>
+          <div class="chart-container">
+            <div ref="personalityChartRef" class="chart-canvas"></div>
+          </div>
+        </section>
+
+        <!-- Section: Monthly Trend — full width -->
+        <section class="chart-section chart-section--wide">
+          <div class="chart-section-head">
+            <p class="label-micro chart-label">趋势分析</p>
+            <h2 class="chart-title">月度新增角色</h2>
+          </div>
+          <div class="chart-container">
+            <div ref="trendChartRef" class="chart-canvas"></div>
+          </div>
+        </section>
+
+        <!-- Empty state -->
+        <div class="dash-empty" v-if="!loading && !stats.totalCharacters">
+          <div class="empty-mark" aria-hidden="true">&#9651;</div>
+          <p class="label-upper empty-title">暂无数据</p>
+          <p class="empty-desc">创建角色后数据将显示在这里</p>
+          <el-button type="primary" @click="$router.push('/character/create')">
+            创建角色
+          </el-button>
+        </div>
+
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { getStatsOverview } from '@/api/stats'
 import * as echarts from 'echarts'
 
 const loading = ref(false)
 const stats = ref({})
-const novelTypeChartRef = ref(null)
+const typeChartRef = ref(null)
 const personalityChartRef = ref(null)
 const trendChartRef = ref(null)
 
-let novelTypeChart = null
+let typeChart = null
 let personalityChart = null
 let trendChart = null
+
+const statCards = [
+  { label: '总角色数', value: 0, note: '' },
+  { label: '本月新增', value: 0, note: '' },
+  { label: '已完善', value: 0, note: '' },
+  { label: '草稿', value: 0, note: '' }
+]
 
 async function loadStats() {
   loading.value = true
   try {
     stats.value = await getStatsOverview()
+    statCards[0].value = stats.value.totalCharacters || 0
+    statCards[1].value = stats.value.monthNewCharacters || 0
+    statCards[2].value = stats.value.refinedCount || 0
+    statCards[3].value = stats.value.draftCount || 0
     await initCharts()
   } catch (error) {
     console.error('加载失败', error)
@@ -84,110 +123,158 @@ async function loadStats() {
 }
 
 async function initCharts() {
-  await new Promise(resolve => setTimeout(resolve, 100))
+  await new Promise(r => setTimeout(r, 80))
+  renderTypeChart()
+  renderPersonalityChart()
+  renderTrendChart()
+}
 
-  const novelTypeData = stats.value.byNovelType || {}
-  const novelTypeDataFormatted = Object.entries(novelTypeData).map(([name, value]) => ({
-    name,
-    value
-  }))
+const FERRARI_COLORS = ['#DA291C', '#8F8F8F', '#666666', '#B01E0A', '#D2D2D2', '#303030', '#F6E500']
 
-  if (novelTypeChartRef.value) {
-    if (novelTypeChart) novelTypeChart.dispose()
-    novelTypeChart = echarts.init(novelTypeChartRef.value)
+function renderTypeChart() {
+  if (!typeChartRef.value) return
+  if (typeChart) typeChart.dispose()
+  typeChart = echarts.init(typeChartRef.value)
 
-    novelTypeChart.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { bottom: 10, left: 'center' },
-      series: [{
-        type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
-        itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
-        label: { show: false },
-        emphasis: {
-          label: { show: true, fontSize: 14, fontWeight: 'bold' }
-        },
-        data: novelTypeDataFormatted.length > 0 ? novelTypeDataFormatted : [{ name: '暂无数据', value: 1 }]
-      }],
-      color: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe']
-    })
-  }
+  const raw = stats.value.byNovelType || {}
+  const data = Object.entries(raw).map(([name, value]) => ({ name, value }))
+  const total = data.reduce((s, d) => s + d.value, 0) || 1
 
-  const personalityData = stats.value.byPersonality || {}
-  const personalityDataFormatted = Object.entries(personalityData).map(([name, value]) => ({
-    name,
-    value
-  }))
-
-  if (personalityChartRef.value) {
-    if (personalityChart) personalityChart.dispose()
-    personalityChart = echarts.init(personalityChartRef.value)
-
-    personalityChart.setOption({
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      grid: { left: '3%', right: '4%', bottom: '3%', top: '3%', containLabel: true },
-      xAxis: { type: 'category', data: Object.keys(personalityData) },
-      yAxis: { type: 'value' },
-      series: [{
-        type: 'bar',
-        data: personalityDataFormatted.map((d, i) => ({
-          value: d.value,
-          itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#667eea' },
-              { offset: 1, color: '#764ba2' }
-            ])
-          }
-        })),
-        barWidth: '50%',
-        itemStyle: { borderRadius: [10, 10, 0, 0] }
-      }]
-    })
-  }
-
-  const trendData = stats.value.monthlyTrend || {}
-  const trendKeys = Object.keys(trendData)
-  const trendValues = Object.values(trendData)
-
-  if (trendChartRef.value) {
-    if (trendChart) trendChart.dispose()
-    trendChart = echarts.init(trendChartRef.value)
-
-    trendChart.setOption({
-      tooltip: { trigger: 'axis' },
-      grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: trendKeys
+  typeChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(20,20,20,0.97)',
+      borderColor: 'transparent',
+      borderRadius: '2px',
+      padding: [8, 12],
+      textStyle: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' },
+      formatter: p => `<strong>${p.name}</strong><br/>${p.value} 个角色 (${p.percent}%)`
+    },
+    legend: {
+      orient: 'vertical',
+      right: '5%',
+      top: 'center',
+      itemWidth: 12,
+      itemHeight: 12,
+      itemGap: 16,
+      textStyle: { color: '#D1D1D1', fontSize: 13, fontFamily: 'Arial, Helvetica, sans-serif' }
+    },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['40%', '50%'],
+      data: data.length ? data : [{ name: '暂无数据', value: 1 }],
+      label: { show: false },
+      emphasis: {
+        itemStyle: { shadowBlur: 0, shadowOffsetX: 0 }
       },
-      yAxis: { type: 'value' },
-      series: [{
-        type: 'line',
-        smooth: true,
-        data: trendValues,
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(102, 126, 234, 0.5)' },
-            { offset: 1, color: 'rgba(118, 75, 162, 0.1)' }
-          ])
-        },
-        lineStyle: { color: '#667eea', width: 3 },
-        itemStyle: { color: '#667eea', borderWidth: 2 },
-        symbol: 'circle',
-        symbolSize: 8
-      }]
-    })
-  }
+      itemStyle: {
+        borderColor: '#fff',
+        borderWidth: 2,
+        borderRadius: 2
+      }
+    }],
+    color: FERRARI_COLORS
+  })
+}
+
+function renderPersonalityChart() {
+  if (!personalityChartRef.value) return
+  if (personalityChart) personalityChart.dispose()
+  personalityChart = echarts.init(personalityChartRef.value)
+
+  const raw = stats.value.byPersonality || {}
+  const xData = Object.keys(raw)
+  const yData = Object.values(raw)
+
+  personalityChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(20,20,20,0.97)',
+      borderColor: 'transparent',
+      borderRadius: '2px',
+      padding: [8, 12],
+      textStyle: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' }
+    },
+    grid: { left: '3%', right: '8%', bottom: '10%', top: '8%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: xData,
+      axisLine: { lineStyle: { color: '#D2D2D2' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#BFBFBB', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+      axisLabel: { color: '#BFBFBB', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' }
+    },
+    series: [{
+      type: 'bar',
+      data: yData,
+      barWidth: '40%',
+      itemStyle: {
+        color: '#DA291C',
+        borderRadius: [2, 2, 0, 0]
+      }
+    }]
+  })
+}
+
+function renderTrendChart() {
+  if (!trendChartRef.value) return
+  if (trendChart) trendChart.dispose()
+  trendChart = echarts.init(trendChartRef.value)
+
+  const raw = stats.value.monthlyTrend || {}
+  const xData = Object.keys(raw)
+  const yData = Object.values(raw)
+
+  trendChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(20,20,20,0.97)',
+      borderColor: 'transparent',
+      borderRadius: '2px',
+      padding: [8, 12],
+      textStyle: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' }
+    },
+    grid: { left: '3%', right: '6%', bottom: '10%', top: '10%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: xData,
+      axisLine: { lineStyle: { color: '#D2D2D2' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#BFBFBB', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+      axisLabel: { color: '#BFBFBB', fontSize: 12, fontFamily: 'Arial, Helvetica, sans-serif' }
+    },
+    series: [{
+      type: 'line',
+      smooth: false,
+      data: yData,
+      lineStyle: { color: '#DA291C', width: 2 },
+      areaStyle: { color: 'rgba(218,41,28,0.12)' },
+      itemStyle: { color: '#DA291C', borderWidth: 2 },
+      symbol: 'circle',
+      symbolSize: 6
+    }]
+  })
 }
 
 function handleResize() {
-  novelTypeChart?.resize()
+  typeChart?.resize()
   personalityChart?.resize()
   trendChart?.resize()
 }
@@ -199,121 +286,246 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  novelTypeChart?.dispose()
+  typeChart?.dispose()
   personalityChart?.dispose()
   trendChart?.dispose()
 })
 </script>
 
 <style scoped>
+/* ============================================
+   Page
+   ============================================ */
 .dashboard-page {
   min-height: 100vh;
-  background: #f5f7fa;
-  padding: 20px;
+  background: var(--f-color-black);
 }
 
-.page-header {
-  max-width: 1200px;
-  margin: 0 auto 30px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* ============================================
+   Header
+   ============================================ */
+.dash-header {
+  background: var(--f-color-ui-90);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
-.page-header h1 {
-  font-size: 28px;
-  color: #333;
-  margin: 0;
-}
-
-.dashboard-content {
-  max-width: 1200px;
+.dash-header-inner {
+  max-width: var(--max-w);
   margin: 0 auto;
+  padding: var(--sp-24);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-24);
 }
 
-.stats-cards {
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  color: #BFBFBB !important;
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.15s !important;
+  flex-shrink: 0;
+}
+.back-btn:hover { color: #FFFFFF !important; background: transparent !important; }
+.back-btn span[aria-hidden] { font-size: 16px; }
+
+.header-center { flex: 1; }
+
+.dash-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--f-color-text-dark);
+  margin-bottom: var(--sp-4);
+}
+
+.dash-sub { color: #BFBFBB; }
+
+.header-spacer { width: 80px; }
+
+/* ============================================
+   Stats section
+   ============================================ */
+.stats-section {
+  background: var(--f-color-black);
+  padding: var(--sp-32) 0 var(--sp-24);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.stats-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 var(--sp-24);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-20);
 }
 
 .stat-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.stat-icon {
-  width: 70px;
-  height: 70px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
-}
-
-.stat-info {
-  flex: 1;
+  background: var(--f-color-ui-90);
+  border-radius: var(--radius-default);
+  padding: var(--sp-24);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #999;
-  margin: 0 0 8px 0;
+  color: #BFBFBB;
+  margin-bottom: var(--sp-10);
 }
 
 .stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #333;
-  margin: 0;
+  font-size: 40px;
+  font-weight: 500;
+  color: #FFFFFF;
+  line-height: 1;
+  margin-bottom: var(--sp-6);
 }
 
-.charts-grid {
+.stat-note {
+  font-size: 12px;
+  color: #8F8F8F;
+}
+
+/* ============================================
+   Main content — White panels
+   ============================================ */
+.dash-main {
+  background: var(--f-color-ui-0);
+  padding: var(--sp-40) 0 var(--sp-60);
+}
+
+.dash-main-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 var(--sp-24);
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-24);
 }
 
-.chart-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+/* ============================================
+   Chart section
+   ============================================ */
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
 }
 
-.chart-card :deep(.el-card__header) {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  border-bottom: none;
-  padding-bottom: 0;
+.chart-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
 }
 
-.chart-card.wide {
-  grid-column: 1 / -1;
+.chart-label {
+  color: var(--f-color-black-50);
+}
+
+.chart-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--f-color-text-light);
 }
 
 .chart-container {
+  background: var(--f-color-ui-0);
+  border: 1px solid var(--f-color-ui-20);
+  border-radius: var(--radius-default);
+  padding: var(--sp-20);
+}
+
+.chart-canvas {
   width: 100%;
-  height: 300px;
+  height: 280px;
 }
 
-.chart-container.wide {
-  height: 350px;
+.chart-section--wide {
+  grid-column: 1 / -1;
 }
 
-@media (max-width: 768px) {
-  .charts-grid {
+.chart-section--wide .chart-canvas {
+  height: 260px;
+}
+
+/* ============================================
+   Empty
+   ============================================ */
+.dash-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-80) var(--sp-24);
+  text-align: center;
+  gap: var(--sp-12);
+}
+
+.empty-mark {
+  font-size: 40px;
+  color: var(--f-color-accent-100);
+  margin-bottom: var(--sp-8);
+}
+
+.empty-title {
+  color: var(--f-color-black-50);
+}
+
+.empty-desc {
+  font-size: 14px;
+  color: var(--f-color-black-60);
+  margin-bottom: var(--sp-8);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 960px) {
+  .stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-main-inner {
     grid-template-columns: 1fr;
   }
 
-  .chart-card.wide {
+  .chart-section--wide {
     grid-column: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .dash-header-inner {
+    flex-wrap: wrap;
+    gap: var(--sp-12);
+    padding: var(--sp-16) var(--sp-20);
+  }
+
+  .header-spacer { display: none; }
+
+  .stats-inner {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0 var(--sp-20);
+  }
+
+  .dash-main-inner {
+    padding: 0 var(--sp-20);
+  }
+
+  .stat-value {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-inner {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>
