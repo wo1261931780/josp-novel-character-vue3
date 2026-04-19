@@ -93,6 +93,7 @@
                   placeholder="选择具体类型"
                   style="width: 48%"
                   :disabled="!form.category"
+                  filterable
                   @focus="loadTypesByCategory"
                   @change="onNovelTypeChange"
                 >
@@ -110,7 +111,7 @@
 
           <el-form-item label="性格特点" prop="personality">
             <div class="input-with-random">
-              <el-select v-model="form.personality" placeholder="选择性格" style="width: 100%">
+              <el-select v-model="form.personality" placeholder="选择性格" style="width: 100%" filterable>
                 <el-option
                   v-for="opt in personalityOptions"
                   :key="opt.value"
@@ -124,7 +125,7 @@
 
           <el-form-item label="背景环境" prop="background">
             <div class="input-with-random">
-              <el-select v-model="form.background" placeholder="选择背景" style="width: 100%" @change="onBackgroundChange">
+              <el-select v-model="form.background" placeholder="选择背景" style="width: 100%" filterable @change="onBackgroundChange">
                 <el-option
                   v-for="bg in compatibleBackgrounds"
                   :key="bg"
@@ -138,7 +139,7 @@
 
           <el-form-item label="出生地" prop="birthplace">
             <div class="input-with-random">
-              <el-select v-model="form.birthplace" placeholder="先选择背景" style="width: 100%">
+              <el-select v-model="form.birthplace" placeholder="选择出生地" style="width: 100%" filterable>
                 <el-option
                   v-for="place in birthplaces"
                   :key="place"

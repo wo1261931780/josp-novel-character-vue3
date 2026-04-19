@@ -19,7 +19,6 @@ const props = defineProps({
 const chartRef = ref(null)
 let chart = null
 
-// 事件类型配置（顺序与 y 轴对齐）
 const CATEGORIES = ['成长', '转折', '冲突', '成就', '悲剧']
 const COLORS = {
   '成长': '#409eff',
@@ -42,43 +41,40 @@ function buildChart() {
     chart = null
   }
 
-  const validEvents = (props.events || []).filter(e => e && e.age != null)
+  const validEvents = (props.events || [])
+    .filter(e => e && e.age != null && e.age !== undefined)
+    .sort((a, b) => Number(a.age) - Number(b.age))
+
   if (validEvents.length === 0) return
 
-  chart = echarts.init(chartRef.value)
-
-  // 计算 x 轴范围
+  // ========== 核心修复1：x轴范围 = 真实数据范围，不要用角色寿命 ==========
   const ages = validEvents.map(e => Number(e.age) || 0)
+  const minAge = Math.min(...ages)
   const maxEventAge = Math.max(...ages)
-  // 至少显示到 maxAge + 10，且最小为 40（确保有足够空间展示）
-  const chartMaxAge = Math.max(maxEventAge + 10, Number(props.maxAge) || 0, 40)
+  // x轴从事件最小年龄-2开始，到事件最大年龄+15结束
+  const xMin = Math.max(0, minAge - 2)
+  const xMax = maxEventAge + 15
 
-  // 计算合适的刻度间隔：让 x 轴显示约 6-8 个刻度
-  const niceMax = chartMaxAge
-  // 用 ECharts 内部算法找"漂亮数字"作为 interval
-  const rawInterval = niceMax / 6
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawInterval)))
-  const normalized = rawInterval / magnitude
-  let niceInterval = magnitude
-  if (normalized <= 1) niceInterval = 1 * magnitude
-  else if (normalized <= 2) niceInterval = 2 * magnitude
-  else if (normalized <= 5) niceInterval = 5 * magnitude
-  else niceInterval = 10 * magnitude
-
-  // 按类型分组计算组内偏移，避免同类型事件重叠
+  // ========== 核心修复2：Y轴用数值型(category轴对小数处理有歧义) ==========
+  // 每个类型占一个整数区段[0,1),[1,2),...组内用小数偏移展开
   const scatterData = validEvents.map(e => {
     const baseY = getTypeIndex(e.eventType)
-    // 统计同类型中年龄 ≤ 当前事件的个数（用于垂直偏移）
-    const sameTypeCount = validEvents.filter(
-      o => o.eventType === e.eventType && Number(o.age) <= Number(e.age)
-    ).length
-    // 组内偏移：从 0 开始，每个同类型事件向下偏移 0.35
-    const yOffset = (sameTypeCount - 1) * 0.35
+    // 同年龄+同类型的事件，依次向下偏移0.2
+    const sameAgeSameTypeEvents = validEvents.filter(
+      o => o.eventType === e.eventType && Number(o.age) === Number(e.age)
+    )
+    const idxInGroup = sameAgeSameTypeEvents.findIndex(
+      o => String(o.id) === String(e.id)
+    )
+    // 偏移量：第0个0.0，第1个0.2，第2个0.4...
+    const yOffset = idxInGroup * 0.25
+    const yValue = baseY + yOffset
+
     return {
       name: String(e.eventName || '未知事件'),
       value: [
-        Number(e.age),              // x = 年龄（数值）
-        baseY + yOffset,           // y = 类型index + 组内偏移
+        Number(e.age),
+        yValue,
         String(e.eventName || ''),
         String(e.eventType || ''),
         Number(e.importance) || 3
@@ -89,21 +85,32 @@ function buildChart() {
     }
   })
 
+  // 找出需要显示label的事件（太多会乱，只显示每个年龄每个类型的第一个）
+  const labelEvents = new Set(
+    validEvents
+      .filter(e => {
+        const sameAgeSameType = validEvents.filter(
+          o => o.eventType === e.eventType && Number(o.age) === Number(e.age)
+        )
+        return sameAgeSameType[0] === e
+      })
+      .map(e => String(e.id))
+  )
+
   const option = {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(255,255,255,0.97)',
-      borderColor: '#e4e7ed',
-      borderWidth: 1,
-      borderRadius: 6,
+      backgroundColor: 'rgba(50,50,50,0.95)',
+      borderColor: 'transparent',
+      borderRadius: 8,
       padding: [10, 14],
-      textStyle: { color: '#333', fontSize: 13 },
+      textStyle: { color: '#fff', fontSize: 13 },
       formatter(params) {
         const v = params.data.value
         const stars = '★'.repeat(v[4]) + '☆'.repeat(5 - v[4])
         return `<strong>${v[2]}</strong><br/>
-                类型：<span style="color:${COLORS[v[3]] || '#666'}">${v[3]}</span><br/>
+                类型：<span style="color:${COLORS[v[3]]}">${v[3]}</span><br/>
                 年龄：${v[0]}岁<br/>
                 重要度：${stars}`
       }
@@ -116,8 +123,8 @@ function buildChart() {
       itemHeight: 10
     },
     grid: {
-      left: 70,
-      right: 80,
+      left: 80,
+      right: 60,
       top: 80,
       bottom: 60,
       containLabel: false
@@ -128,30 +135,44 @@ function buildChart() {
       nameLocation: 'middle',
       nameGap: 32,
       nameTextStyle: { fontSize: 13 },
-      min: 0,
-      max: niceMax,
-      // 关键！显式设置 interval，并加 boundaryGap: false
-      interval: niceInterval,
-      boundaryGap: false,
+      min: xMin,
+      max: xMax,
+      // interval按数据范围动态计算，每10-20岁一个刻度
+      minInterval: 1,
       axisLine: { lineStyle: { color: '#c0c4cc' } },
       axisTick: { lineStyle: { color: '#c0c4cc' } },
       axisLabel: {
         fontSize: 12,
         color: '#666',
-        formatter: val => String(val)
+        formatter: val => String(Math.round(val))
       },
       splitLine: { lineStyle: { color: '#f0f2f5', type: 'dashed' } }
     },
     yAxis: {
-      type: 'category',
-      data: CATEGORIES,
+      type: 'value',
+      // Y轴范围覆盖5个类型，每类型占1个单位(0-4)
+      min: -0.3,
+      max: CATEGORIES.length - 1 + 1,
+      // 每1个单位一个刻度，刚好对齐类型
+      interval: 1,
       name: '事件类型',
       nameLocation: 'middle',
-      nameGap: -50,
+      nameGap: -55,
       nameTextStyle: { fontSize: 13 },
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { fontSize: 13, color: '#333' }
+      axisLabel: {
+        fontSize: 12,
+        color: '#333',
+        formatter(val) {
+          const idx = Math.round(val)
+          if (idx >= 0 && idx < CATEGORIES.length) {
+            return CATEGORIES[idx]
+          }
+          return ''
+        }
+      },
+      splitLine: { lineStyle: { color: '#f0f2f5', type: 'dashed' } }
     },
     series: [{
       type: 'scatter',
@@ -159,21 +180,25 @@ function buildChart() {
       data: scatterData,
       symbolSize(data) {
         const imp = Number(data[4]) || 3
-        return 8 + imp * 4  // importance 3→20px, 4→24px, 5→28px
+        return 8 + imp * 4
       },
       label: {
         show: true,
         position: 'right',
-        distance: 10,
+        distance: 8,
         formatter(p) {
           return p.data.value[0] + '岁'
         },
         fontSize: 11,
-        color: '#909399'
+        color: '#666'
+      },
+      labelLayout: {
+        hideOverlap: true
       }
     }]
   }
 
+  chart = echarts.init(chartRef.value)
   try {
     chart.setOption(option, true)
   } catch (err) {
@@ -182,9 +207,7 @@ function buildChart() {
 }
 
 function handleResize() {
-  if (chart) {
-    chart.resize()
-  }
+  if (chart) chart.resize()
 }
 
 watch(
@@ -214,12 +237,12 @@ onBeforeUnmount(() => {
 <style scoped>
 .timeline-chart-wrapper {
   width: 100%;
-  min-height: 400px;
+  min-height: 420px;
 }
 
 .timeline-chart {
   width: 100%;
-  height: 420px;
+  height: 480px;
 }
 
 .chart-empty {
@@ -228,6 +251,6 @@ onBeforeUnmount(() => {
   justify-content: center;
   height: 400px;
   color: #999;
-  fontSize: 15px;
+  font-size: 15px;
 }
 </style>

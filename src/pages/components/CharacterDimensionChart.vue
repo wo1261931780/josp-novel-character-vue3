@@ -78,7 +78,7 @@ function render() {
   })
 }
 
-watch(() => props.dimensions, () => { render() }, { deep: true })
+watch(() => props.dimensions, () => { render() }, { immediate: true, deep: true })
 onMounted(() => { if (props.dimensions) render() })
 onBeforeUnmount(() => { if (chart) { chart.dispose(); chart = null } })
 </script>
