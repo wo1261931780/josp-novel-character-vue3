@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 import { computed } from 'vue'
 
 const props = defineProps({

@@ -3,6 +3,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 </script>
 
 <style>

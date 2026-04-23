@@ -73,6 +73,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 defineProps({
   character: { type: Object, required: true },
   generating: { type: Boolean, default: false }

@@ -252,6 +252,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'

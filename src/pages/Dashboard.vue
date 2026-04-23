@@ -85,6 +85,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { getStatsOverview } from '@/api/stats'
 import * as echarts from 'echarts'

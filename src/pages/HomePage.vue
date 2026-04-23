@@ -101,6 +101,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 const features = [
   {
     num: '01',

@@ -124,6 +124,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'

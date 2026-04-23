@@ -42,6 +42,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 defineProps({
   events: { type: Array, default: () => [] }
 })

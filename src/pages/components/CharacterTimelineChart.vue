@@ -9,6 +9,7 @@
 </template>
 
 <script setup>
+// JOSP-novelCharacterVue3
 import { ref, watch, onMounted, onUpdated, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 
